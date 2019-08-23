@@ -17,4 +17,4 @@
 - include: firewall.yml
   when: openvpn_route_traffic | bool
 
-- include_tasks: service.yml
+- include_tasks: "{{ ansible_os_family }}/service.yml"
