@@ -6,22 +6,32 @@
     regexp: '^LimitNPROC='
     line: LimitNPROC=infinity
 
-- name: Copy configs for each client
-  copy:
-    src: "{{ openvpn_etcdir }}/server.conf"
-    dest: "{{ openvpn_etcdir }}/{{ item }}.conf"
-    force: yes
-    remote_src: yes
-  with_items: "{{ openvpn_clients }}"
+  # - name: Copy configs for each client
+  #   copy:
+  #     src: "{{ openvpn_etcdir }}/server.conf"
+  #     dest: "{{ openvpn_etcdir }}/{{ item }}.conf"
+  #     force: yes
+  #     remote_src: yes
+  #   with_items: "{{ openvpn_clients }}"
 
-  # - name: Modify execstart for OpenVPN service
-  #   lineinfile:
-  #     path: /lib/systemd/system/openvpn@.service
-  #     regexp: '^ExecStart='
-  #     line: /usr/sbin/openvpn --daemon ovpn-%i --status /run/openvpn/%i.status 10 --cd /etc/openvpn --config /etc/openvpn/%i.conf --writepid /run/openvpn/%i.pid
+  # - name: Create pidfiles for each client
+  #   file:
+  #     path: "/run/openvpn/{{ item }}.pid"
+  #     state: touch
+  #     owner: root
+  #     group: root
+  #     mode: u=rw,g=r,o=r
+  #   with_items: "{{ openvpn_clients }}"
+
+- name: Modify execstart for OpenVPN service
+  lineinfile:
+    path: /lib/systemd/system/openvpn@.service
+    regexp: '^ExecStart='
+    line: "ExecStart=/usr/sbin/openvpn --daemon ovpn-%i --status {{ openvpn_etcdir }}/{{openvpn_status}} 10 --cd {{ openvpn_etcdir }} --config {{ openvpn_etcdir }}/server.conf"
 
 - name: Ensure OpenVPN is started
   service:
     name: "{{ openvpn_service }}"
     state: started
+    daemon_reload: yes
     enabled: true
